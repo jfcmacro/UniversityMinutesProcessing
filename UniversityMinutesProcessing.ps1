@@ -1,7 +1,7 @@
-﻿# Autor: Juan Francisco Cardona McCormick
-# email: fcardona@eafit.edu.co
+﻿# Author: Juan Francisco Cardona Mc'Cormick
+# email: jfcmacro@gmail.com
 # date: 2019/09/13
-# Purpose:
+# Purpose: 
 
 function ParserDate($date) {
     if ($date -match "(.*)( *)(Ho|Pr|Al|As|Co).*$") {
@@ -77,6 +77,12 @@ function ReduceFromYear($date) {
     return [string]$date.Replace("del año", "de")
 }
 
+function AllDateParse($date) {
+    $date = ParserDate9(ParserDate8(ParserDate7(ParserDate6(ParserDate5(ParserDate4(ParserDate3(ParserDate2(ParserDate($dateActa)))))))))
+    $date = ReduceFromYear($date)
+    return FinalDateTrans($date)
+}
+
 function FinalDateTrans($date) {
     switch([string]$date.Trim()) {
         "Agosto 13 y 14  de 1999"        { $res = "Agosto 13 de 1999"; break }
@@ -102,7 +108,21 @@ function FinalDateTrans($date) {
     return $res
 }
 
-function Get-Date-From-Minute-File ($wordApp, $year, $obj) {
+function getStringNameFromFileName($filename) {
+    $strName = ([string]$filename).Substring(4)
+
+    if ($strName.EndsWith(".doc")) {
+        $strName = $strName.Substring(0, $strName.Length - 4)
+    }
+    
+    if ($strName.EndsWith(".docx")) {
+        $strName = $strName.Substring(0, $strName.Length - 5)
+    }
+
+    return $strName
+}
+
+function Get-Date-From-Minute-File ($wordApp, $year, $obj,[ref]$mla) {
     
     $findText = "Fecha:(\t| )*"
     $charactersAround = 30
@@ -114,10 +134,12 @@ function Get-Date-From-Minute-File ($wordApp, $year, $obj) {
 
         if ($range.Text -match "$($findText)(.{$($charactersAround)})") {
             $dateActa = $Matches[2]
-            $dateActa2 = ParserDate9(ParserDate8(ParserDate7(ParserDate6(ParserDate5(ParserDate4(ParserDate3(ParserDate2(ParserDate($dateActa)))))))))
-            $dateActa2 = ReduceFromYear($dateActa2)
-            $dateActa2 = FinalDateTrans($dateActa2)
+            # $dateActa2 = ParserDate9(ParserDate8(ParserDate7(ParserDate6(ParserDate5(ParserDate4(ParserDate3(ParserDate2(ParserDate($dateActa)))))))))
+            # $dateActa2 = ReduceFromYear($dateActa2)
+            # $dateActa2 = FinalDateTrans($dateActa2)
+            $dateActa2 = AllDateParse($dateActa2)
             Write-Host("FileName: " + $fileName)
+            Write-Host("String Name: " + (getStringNameFromFileName($fileName)))
             Write-Host -NoNewline ('Year: ' + $year + ' Found Date: ' + $dateActa +' Date reduced: ' + $dateActa2)  
             $formatDate = [datetime]::Parse($dateActa2)
             $stringDate = $formatDate.toString("yyyy-MM-dd")
@@ -126,15 +148,17 @@ function Get-Date-From-Minute-File ($wordApp, $year, $obj) {
                 if ($fileName -match "[0-9]+") {
                     $actaNumberStr = $Matches[0]
                     $actaNumber = [int]$actaNumberStr
+                    $mla.Value.Add($actaNumber) | Out-Null
                     $formatNumber = '{0:d3}' -f $actaNumber
                     $seqFormatNumber = '{0:d3}' -f $minuteNumber.value
                     Write-Host ('FormatNumber: ' + $formatNumber)
                 }
             }
             else {
-                if ($fileName -match "\( *([0-9]+)\)") {
+                if ($fileName -match " *\( *([0-9]+)\)") {
                     $actaNumberStr = $Matches[1]
                     $actaNumber = [int]$actaNumberStr
+                    $mla.Value.Add($actaNumber) | Out-Null
                     $formatNumber = '{0:d3}' -f $actaNumber
                     $seqFormatNumber = '{0:d3}' -f $minuteNumber.value
                     Write-Host ('FormatNumber: ' + $formatNumber)
@@ -171,6 +195,7 @@ $wordApp = New-Object -ComObject Word.Application
 cd ~
 cd "Documents\Beatriz\ACTAS CONSEJO ESCUELA"
 $minuteNumber = 0
+$minuteListArray = New-Object System.Collections.ArrayList
 
 Get-ChildItem -Directory | ForEach-Object {
 
@@ -183,7 +208,7 @@ Get-ChildItem -Directory | ForEach-Object {
         #- Write-Host (" Year: " + $year)
 
         Get-ChildItem -File | ForEach-Object {
-            Get-Date-From-Minute-File $wordApp $year $_ ([ref] $minuteNumber)
+            Get-Date-From-Minute-File $wordApp $year $_ ([ref] $minuteListArray)
         }
 
         Get-ChildItem -Directory | ForEach-Object {
@@ -195,7 +220,7 @@ Get-ChildItem -Directory | ForEach-Object {
                 ## Write-Host ("Directory2: " + $dirName2)
 
                 Get-ChildItem -File | ForEach-Object {
-                    Get-Date-From-Minute-File $wordApp $year $_ ([ref] $minuteNumber)
+                    Get-Date-From-Minute-File $wordApp $year $_ ([ref] $minuteListArray)
                 }
 
                 Get-ChildItem -Directory | ForEach-Object {
@@ -206,7 +231,7 @@ Get-ChildItem -Directory | ForEach-Object {
                         Push-Location $dirName3
                    ##     Write-Host ("Directory3: " + $dirName3)
                         Get-ChildItem -File | ForEach-Object {
-                            Get-Date-From-Minute-File $wordApp $year $_ ([ref] $minuteNumber)
+                            Get-Date-From-Minute-File $wordApp $year $_ ([ref] $minuteListArray)
                         }
                         Pop-Location
                     }
@@ -218,6 +243,11 @@ Get-ChildItem -Directory | ForEach-Object {
     }
 }
 
+for ($i = 0; $i -eq 130; $i++) {
+   if (-Not ($minuteListArray.Contains($i))) {
+       Write-Host ('Minute ' + $i + "doesn't exist")
+   }
+}
 $wordApp.Quit()
 cd ~ 
 # Clear-Host
