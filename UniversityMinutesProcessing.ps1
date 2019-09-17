@@ -119,7 +119,49 @@ function getStringNameFromFileName($filename) {
         $strName = $strName.Substring(0, $strName.Length - 5)
     }
 
+    if ($strName -match " *([0-9]+)?(.*)") {
+        $strName = $Matches[2]
+    }
+
+    if (([string]$strName).Length -gt 0) {
+        if ($strName -match " *(\( *[0-9]+ *\))(.*)") {
+            $strName = $Matches[2]
+        }
+    }
+
+    if (([string]$strName).Length -gt 0) {
+        if ($strName -match "(.*)(\(? *[0-9]+ *\)?)") {
+            $strName = $Matches[1]
+        }
+    }
+
+    if (([string]$strName).Length -gt 0) {
+        if ($strName -match "(.*)(\(?[0-9]+)") {
+            $strName = $Matches[1]
+        }
+    }
+
+    if (([string]$strName).Length -gt 0) {
+        if ($strName -match "(.*)([0-9]$)") {
+            $strName = $Matches[1]
+        }
+    }
+
+    if (([string]$strName).Length -gt 0) {
+        $strName = ([string]$strName).Trim().ToLower().Replace(' ', '-')
+    }
+
     return $strName
+}
+
+function Generate-New-Name ($stringDate, $seqFormatNumber, $str) {
+    $newName = $stringDate + "-consejo-de-escuela-" + $seqFormatNumber
+
+    if (([string]$str).Length -gt 0) {
+        $newName = $newName + "-" + $str
+    }
+
+    return $newName
 }
 
 function Get-Date-From-Minute-File ($wordApp, $year, $obj,[ref]$mla) {
@@ -139,31 +181,33 @@ function Get-Date-From-Minute-File ($wordApp, $year, $obj,[ref]$mla) {
             # $dateActa2 = FinalDateTrans($dateActa2)
             $dateActa2 = AllDateParse($dateActa2)
             Write-Host("FileName: " + $fileName)
-            Write-Host("String Name: " + (getStringNameFromFileName($fileName)))
-            Write-Host -NoNewline ('Year: ' + $year + ' Found Date: ' + $dateActa +' Date reduced: ' + $dateActa2)  
+            $fileStringName = getStringNameFromFileName($fileName)
+            # Write-Host -NoNewline ('Year: ' + $year + ' Found Date: ' + $dateActa +' Date reduced: ' + $dateActa2)  
             $formatDate = [datetime]::Parse($dateActa2)
             $stringDate = $formatDate.toString("yyyy-MM-dd")
-            Write-Host (' Parsed: ' + $stringDate)
+            # Write-Host (' Parsed: ' + $stringDate)
+            $formatNumber = ""
             if (($year -ge 1998) -and ($year -lt 2007)) {
                 if ($fileName -match "[0-9]+") {
                     $actaNumberStr = $Matches[0]
                     $actaNumber = [int]$actaNumberStr
                     $mla.Value.Add($actaNumber) | Out-Null
                     $formatNumber = '{0:d3}' -f $actaNumber
-                    $seqFormatNumber = '{0:d3}' -f $minuteNumber.value
-                    Write-Host ('FormatNumber: ' + $formatNumber)
+                    # $seqFormatNumber = '{0:d3}' -f $minuteNumber.value
+                    # Write-Host ('FormatNumber: ' + $formatNumber)
                 }
             }
             else {
                 if ($fileName -match " *\( *([0-9]+)\)") {
                     $actaNumberStr = $Matches[1]
                     $actaNumber = [int]$actaNumberStr
-                    $mla.Value.Add($actaNumber) | Out-Null
                     $formatNumber = '{0:d3}' -f $actaNumber
-                    $seqFormatNumber = '{0:d3}' -f $minuteNumber.value
-                    Write-Host ('FormatNumber: ' + $formatNumber)
+                    # $seqFormatNumber = '{0:d3}' -f $minuteNumber.value
+                    # Write-Host ('FormatNumber: ' + $formatNumber)
                 }
             }
+            $newName = Generate-New-Name $stringDate  $formatNumber $fileStringName
+            Write-Host ('New name: ' + $newName)
         }
         else {
             ## Write-Host ('Fichero no reconocido: ' + $fileName)
