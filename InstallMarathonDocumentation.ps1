@@ -66,12 +66,12 @@ if (-not(Test-Path -Path $shortcutFile)) {
     set-shortcut $shortcutFile $shortcutDest
 }
 
-# Installing Python 3.6.2
-$execDir='python-software'
-$pythonExec='python-3.6.2-amd64.exe'
-$pythonInstallPath=Join-Path -Path $marathonDoc -ChildPath $execDir | Join-Path -ChildPath $pythonExec
+## Installing Python 3.6.2
+#$execDir='python-software'
+#$pythonExec='python-3.6.2-amd64.exe'
+#$pythonInstallPath=Join-Path -Path $marathonDoc -ChildPath $execDir | Join-Path -ChildPath $pythonExec
 
-Write-Host ('Installing python: ' + $pythonInstallPath)
-& $pythonInstallPath /quiet 'InstallAllUser=0' 'PrependPath=1' 
+#Write-Host ('Installing python: ' + $pythonInstallPath)
+#& $pythonInstallPath /quiet 'InstallAllUser=0' 'PrependPath=1' 
 
 
